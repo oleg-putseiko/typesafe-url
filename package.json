@@ -1,0 +1,44 @@
+{
+  "name": "typesafe-url",
+  "version": "1.0.0-beta",
+  "description": "Typesafe URL",
+  "license": "MIT",
+  "author": "Oleg Putseiko <oleg.putseiko@gmail.com> (https://github.com/oleg-putseiko)",
+  "homepage": "https://github.com/oleg-putseiko/typesafe-url",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oleg-putseiko/typesafe-url"
+  },
+  "bugs": {
+    "url": "https://github.com/oleg-putseiko/typesafe-url/issues"
+  },
+  "scripts": {
+    "format": "prettier -w .",
+    "format:check": "prettier -c .",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^18.2.0",
+    "@commitlint/config-conventional": "^18.1.0",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "eslint": "^8.53.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-config-woofmeow": "^1.0.1",
+    "eslint-plugin-simple-import-sort": "^10.0.0",
+    "eslint-plugin-unused-imports": "^3.0.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.0.2",
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2"
+  },
+  "engines": {
+    "node": "18.18.0",
+    "yarn": "3.6.4"
+  },
+  "volta": {
+    "node": "18.18.0",
+    "yarn": "3.6.4"
+  },
+  "packageManager": "yarn@3.6.4"
+}
