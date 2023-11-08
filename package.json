@@ -12,6 +12,7 @@
   "bugs": {
     "url": "https://github.com/oleg-putseiko/typesafe-url/issues"
   },
+  "type": "module",
   "scripts": {
     "format": "prettier -w .",
     "format:check": "prettier -c .",

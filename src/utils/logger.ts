@@ -22,26 +22,26 @@ export class Logger implements ILogger {
   }
 
   log(...args: unknown[]) {
-    this.call_('log', args);
+    this.call_('log', ...args);
   }
 
   info(...args: unknown[]) {
-    this.call_('info', args);
+    this.call_('info', ...args);
   }
 
   warn(...args: unknown[]) {
-    this.call_('warn', args);
+    this.call_('warn', ...args);
   }
 
   error(...args: unknown[]) {
-    this.call_('error', args);
+    this.call_('error', ...args);
   }
 
   private call_(actionKey: keyof ILogger, ...args: unknown[]) {
     const action = this.instance_[actionKey];
 
     if (this.isEnabled_ && typeof action === 'function') {
-      action(args);
+      action(...args);
     }
   }
 }

@@ -1,24 +1,27 @@
 {
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node",
+    "files": true
+  },
   "compilerOptions": {
     "target": "es5",
-    "module": "commonjs",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
-    "checkJs": true,
-    "strictNullChecks": true,
-    "declaration": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "noEmit": false,
-    "strict": false,
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "incremental": true
   },
-  "include": ["src/"],
-  "exclude": ["dist", "build", ".cache", "**/__tests__", "node_modules"]
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"],
+  "moduleResolution": ["node_modules", "node"]
 }
