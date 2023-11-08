@@ -204,7 +204,19 @@ export class SafeURL<R extends string, S extends boolean = true> {
     return this.url_.port;
   }
 
-  getProtocol() {
+  /**
+   * Sets an URL protocol value
+   *
+   * @param protocol - URL protocol value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/protocol))
+   */
+  setProtocol(protocol: string): void {
+    this.url_.protocol = protocol;
+  }
+
+  /**
+   * @returns URL protocol value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/protocol))
+   */
+  getProtocol(): string {
     return this.url_.protocol;
   }
 
