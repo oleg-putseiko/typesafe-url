@@ -188,7 +188,19 @@ export class SafeURL<R extends string, S extends boolean = true> {
     return this.url_.pathname;
   }
 
-  getPort() {
+  /**
+   * Sets an URL port value
+   *
+   * @param port - URL port value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/port))
+   */
+  setPort(port: string): void {
+    this.url_.port = port;
+  }
+
+  /**
+   * @returns URL port value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/port))
+   */
+  getPort(): string {
     return this.url_.port;
   }
 
