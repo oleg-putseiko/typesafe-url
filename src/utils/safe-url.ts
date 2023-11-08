@@ -21,23 +21,20 @@ export class SafeURL<R extends string> {
   protected logger_: ILogger;
 
   constructor(route: R, options?: Some<URLOptions>) {
-    try {
-      this.url_ = new URL(route, options?.baseUrl);
-      this.route_ = route;
+    this.url_ = new URL(route, options?.baseUrl);
+    this.route_ = route;
 
-      this.logger_ = new Logger({
-        instance: options?.logger,
-        isEnabled: !NODE_ENV || NODE_ENV === 'development',
-      });
+    this.logger_ = new Logger({
+      instance: options?.logger,
+      scope: 'Safe URL',
+      isEnabled: !NODE_ENV || NODE_ENV === 'development',
+    });
 
-      if (!HASH_REGEXPS.allowedHash.test(this.route_)) {
-        freezeProperty(this.url_, 'hash');
-        this.logger_.info(
-          `URL hash value of the route "${this.route_}" is frozen`,
-        );
-      }
-    } catch (error) {
-      throw new URLError(error);
+    if (!HASH_REGEXPS.allowedHash.test(this.route_)) {
+      freezeProperty(this.url_, 'hash');
+      this.logger_.info(
+        `URL hash value of the route "${this.route_}" is frozen`,
+      );
     }
   }
 
@@ -131,3 +128,8 @@ export class SafeURL<R extends string> {
     return this.url_.username;
   }
 }
+
+const url = new SafeURL('/qwe#', { baseUrl: 'https://asd.com' });
+// url.setHash('hash-1');
+
+console.log(url.getHash());

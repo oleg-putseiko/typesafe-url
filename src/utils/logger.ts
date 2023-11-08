@@ -7,17 +7,20 @@ export interface ILogger {
   error: LogFunction;
 }
 
-export type LoggerOptions = Some<{
+export type LoggerOptions = {
   instance: ILogger;
+  scope: string;
   isEnabled: boolean;
-}>;
+};
 
 export class Logger implements ILogger {
   protected readonly instance_: ILogger;
+  protected readonly scope_: string | null;
   protected readonly isEnabled_: boolean;
 
-  constructor(options?: LoggerOptions) {
+  constructor(options?: Some<LoggerOptions>) {
     this.instance_ = options?.instance ?? console;
+    this.scope_ = options?.scope ?? null;
     this.isEnabled_ = options?.isEnabled ?? true;
   }
 
@@ -41,7 +44,9 @@ export class Logger implements ILogger {
     const action = this.instance_[actionKey];
 
     if (this.isEnabled_ && typeof action === 'function') {
-      action(...args);
+      const scopedArgs =
+        this.scope_ !== null ? [`[${this.scope_}]`, ...args] : args;
+      action(...scopedArgs);
     }
   }
 }
