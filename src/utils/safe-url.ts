@@ -2,9 +2,14 @@ import { URLError } from './errors';
 import { ILogger, Logger } from './logger';
 import { freezeProperty } from './object';
 
-type URLOptions = {
+type Strict<S extends boolean, T, D> = S extends true ? T : D;
+
+type Hash<R extends string> = R extends `${infer _}#*` ? string : never;
+
+type URLOptions<S extends boolean = true> = {
   baseUrl: string;
   logger: ILogger;
+  isStrictModeEnabled: S;
 };
 
 const NODE_ENV = process.env.NODE_ENV;
@@ -14,21 +19,27 @@ const HASH_REGEXPS = {
   staticHash: /#([^\*]?|.{2,})$/,
 };
 
-export class SafeURL<R extends string> {
+export class SafeURL<R extends string, S extends boolean = true> {
   private readonly url_: URL;
 
   protected readonly route_: R;
   protected logger_: ILogger;
+  protected readonly isStrictModeEnabled_: S;
 
-  constructor(route: R, options?: Some<URLOptions>) {
+  constructor(route: R, options?: Some<URLOptions<S>>) {
     this.url_ = new URL(route, options?.baseUrl);
     this.route_ = route;
+    this.isStrictModeEnabled_ = options?.isStrictModeEnabled ?? (true as S);
 
     this.logger_ = new Logger({
       instance: options?.logger,
       scope: 'Safe URL',
       isEnabled: !NODE_ENV || NODE_ENV === 'development',
     });
+
+    if (!this.isStrictModeEnabled_) {
+      this.logger_.warn(`Strict mode for route "${this.route_}" is disabled`);
+    }
 
     if (!HASH_REGEXPS.allowedHash.test(this.route_)) {
       freezeProperty(this.url_, 'hash');
@@ -67,13 +78,13 @@ export class SafeURL<R extends string> {
    *
    * @param hash - URL hash value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/hash))
    */
-  setHash(hash: string): void {
+  setHash(hash: Strict<S, Hash<R>, string>): void {
     if (HASH_REGEXPS.allowedHash.test(this.route_)) {
       this.url_.hash = hash;
     } else if (HASH_REGEXPS.staticHash.test(this.route_)) {
-      throw new URLError('Hash value is not mutable');
+      this.throw_(new URLError('Hash value is not mutable'));
     } else {
-      throw new URLError('Route does not allow hash property');
+      this.throw_(new URLError('Route does not allow hash property'));
     }
   }
 
@@ -127,9 +138,9 @@ export class SafeURL<R extends string> {
   getUsername() {
     return this.url_.username;
   }
+
+  private throw_(error: Error) {
+    if (this.isStrictModeEnabled_) throw error;
+    else this.logger_.warn(error.message);
+  }
 }
-
-const url = new SafeURL('/qwe#', { baseUrl: 'https://asd.com' });
-// url.setHash('hash-1');
-
-console.log(url.getHash());
