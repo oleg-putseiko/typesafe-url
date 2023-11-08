@@ -91,15 +91,27 @@ export class SafeURL<R extends string, S extends boolean = true> {
   /**
    * @returns URL hash value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/hash))
    */
-  getHash() {
+  getHash(): string {
     return this.url_.hash;
   }
 
-  getHost() {
+  /**
+   * Sets an URL host value
+   *
+   * @param host - URL host value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/host))
+   */
+  setHost(host: string): void {
+    this.url_.host = host;
+  }
+
+  /**
+   * @returns URL host value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/host))
+   */
+  getHost(): string {
     return this.url_.host;
   }
 
-  getHostName() {
+  getHostname() {
     return this.url_.hostname;
   }
 
