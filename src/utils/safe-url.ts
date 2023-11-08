@@ -111,7 +111,19 @@ export class SafeURL<R extends string, S extends boolean = true> {
     return this.url_.host;
   }
 
-  getHostname() {
+  /**
+   * Sets an URL hostname value
+   *
+   * @param hostname - URL hostname value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/hostname))
+   */
+  setHostname(hostname: string): void {
+    this.url_.hostname = hostname;
+  }
+
+  /**
+   * @returns URL hostname value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/hostname))
+   */
+  getHostname(): string {
     return this.url_.hostname;
   }
 
