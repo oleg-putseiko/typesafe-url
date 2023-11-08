@@ -6,6 +6,11 @@ type Strict<S extends boolean, T, D> = S extends true ? T : D;
 
 type Hash<R extends string> = R extends `${infer _}#*` ? string : never;
 
+type Credentials = {
+  username: string;
+  password: string;
+};
+
 type URLOptions<S extends boolean = true> = {
   baseUrl: string;
   logger: ILogger;
@@ -18,6 +23,9 @@ const HASH_REGEXPS = {
   allowedHash: /#\*$/,
   staticHash: /#([^\*]?|.{2,})$/,
 };
+
+const areCredentialsValid = (username: string, password: string) =>
+  (username !== '' && password !== '') || (username === '' && password === '');
 
 export class SafeURL<R extends string, S extends boolean = true> {
   private readonly url_: URL;
@@ -37,6 +45,10 @@ export class SafeURL<R extends string, S extends boolean = true> {
       isEnabled: !NODE_ENV || NODE_ENV === 'development',
     });
 
+    if (!areCredentialsValid(this.url_.username, this.url_.password)) {
+      this.throw_(new Error('Invalid credentials'));
+    }
+
     if (!this.isStrictModeEnabled_) {
       this.logger_.warn(`Strict mode for route "${this.route_}" is disabled`);
     }
@@ -47,6 +59,33 @@ export class SafeURL<R extends string, S extends boolean = true> {
         `URL hash value of the route "${this.route_}" is frozen`,
       );
     }
+  }
+
+  /**
+   * Sets URL username and password values
+   *
+   * @param credentials
+   * * `username` - URL username value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/username))
+   * * `password` - URL password value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/password))
+   */
+  setCredentials(credentials: Credentials): void {
+    const { username, password } = credentials;
+
+    if (!areCredentialsValid(username, password)) {
+      this.throw_(new Error('Invalid credentials'));
+    }
+
+    this.url_.username = username;
+    this.url_.password = password;
+  }
+
+  /**
+   * @returns URL credentials:
+   * * `username` - URL username value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/username))
+   * * `password` - URL password value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/password))
+   */
+  getCredentials(): Credentials {
+    return { username: this.url_.username, password: this.url_.password };
   }
 
   /**
@@ -131,11 +170,17 @@ export class SafeURL<R extends string, S extends boolean = true> {
     return this.url_.href;
   }
 
-  getOrigin() {
+  /**
+   * @returns URL origin value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/origin))
+   */
+  getOrigin(): string {
     return this.url_.origin;
   }
 
-  getPassword() {
+  /**
+   * @returns URL password value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/password))
+   */
+  getPassword(): string {
     return this.url_.password;
   }
 
@@ -159,7 +204,10 @@ export class SafeURL<R extends string, S extends boolean = true> {
     return this.url_.searchParams;
   }
 
-  getUsername() {
+  /**
+   * @returns URL username value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/username))
+   */
+  getUsername(): string {
     return this.url_.username;
   }
 
