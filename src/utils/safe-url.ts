@@ -45,6 +45,7 @@ type URLOptions<S extends boolean = true> = {
 };
 
 const NODE_ENV = process.env.NODE_ENV;
+const IS_DEVELOPMENT = !NODE_ENV || NODE_ENV === 'development';
 
 const HASH_REGEXPS = {
   anyHash: /#\*$/u,
@@ -64,7 +65,7 @@ export class SafeURL<R extends string, S extends boolean = true> {
   private segments_: Partial<Segments<R>> = {};
 
   protected readonly route_: R;
-  protected logger_: ILogger;
+  protected logger_: Logger;
   protected readonly isStrictModeEnabled_: S;
 
   constructor(route: R, options?: Some<URLOptions<S>>) {
@@ -75,7 +76,7 @@ export class SafeURL<R extends string, S extends boolean = true> {
     this.logger_ = new Logger({
       instance: options?.logger,
       scope: 'Safe URL',
-      isEnabled: !NODE_ENV || NODE_ENV === 'development',
+      isEnabled: IS_DEVELOPMENT,
     });
 
     if (!areCredentialsValid(this.url_.username, this.url_.password)) {
@@ -231,6 +232,7 @@ export class SafeURL<R extends string, S extends boolean = true> {
   }
 
   getHref() {
+    this.logUnsafeUsage_();
     return this.url_.href;
   }
 
@@ -249,6 +251,7 @@ export class SafeURL<R extends string, S extends boolean = true> {
   }
 
   getPathname() {
+    this.logUnsafeUsage_();
     return this.url_.pathname;
   }
 
@@ -337,6 +340,19 @@ export class SafeURL<R extends string, S extends boolean = true> {
   protected throw_(error: Error): void {
     if (this.isStrictModeEnabled_) throw error;
     else this.logger_.warn(error.message);
+  }
+
+  private logUnsafeUsage_(): void {
+    const countOfUnusedSegments =
+      [...this.route_.matchAll(SEGMENT_REGEXPS.keys)].filter(
+        (matches) => matches.length > 1,
+      ).length - keys(this.segments_).length;
+
+    if (countOfUnusedSegments > 0) {
+      this.logger_.traceWarn(
+        'Some segment values are not set, using the url is unsafe',
+      );
+    }
   }
 
   private areSegmentsValid_(segments: AnySegments): segments is Segments<R> {

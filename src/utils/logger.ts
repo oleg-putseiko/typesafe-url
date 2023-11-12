@@ -40,6 +40,16 @@ export class Logger implements ILogger {
     this.call_('error', ...args);
   }
 
+  traceWarn(...args: unknown[]) {
+    const stack = new Error().stack?.replace(/^error/iu, '');
+
+    if (stack !== undefined) {
+      this.call_('warn', ...args, stack);
+    } else {
+      this.call_('warn', ...args);
+    }
+  }
+
   private call_(actionKey: keyof ILogger, ...args: unknown[]) {
     const action = this.instance_[actionKey];
 
