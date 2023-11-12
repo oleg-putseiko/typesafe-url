@@ -47,14 +47,14 @@ type URLOptions<S extends boolean = true> = {
 const NODE_ENV = process.env.NODE_ENV;
 const IS_DEVELOPMENT = !NODE_ENV || NODE_ENV === 'development';
 
+const SEGMENT_REGEXPS = {
+  keys: /\/:([^\\?#\\/]+)($|\?|#|\/)/gu,
+};
+
 const HASH_REGEXPS = {
   anyHash: /#\*$/u,
   certainHash: /#<(.*)>$/u,
   staticHash: /#([^\\*]?|.{2,})$/u,
-};
-
-const SEGMENT_REGEXPS = {
-  keys: /\/:([^\\?#\\/]+)($|\?|#|\/)/gu,
 };
 
 const areCredentialsValid = (username: string, password: string) =>
@@ -94,6 +94,8 @@ export class SafeURL<R extends string, S extends boolean = true> {
       if (matches.length > 1) keys.push(matches[1] as SegmentKeys<R>);
       return keys;
     }, []);
+
+    // freezeProperty(this.url_, 'href');
 
     if (this.segmentKeys_.length <= 0) {
       freezeProperty(this.url_, 'pathname');
@@ -265,6 +267,9 @@ export class SafeURL<R extends string, S extends boolean = true> {
     return this.url_.password;
   }
 
+  /**
+   * @returns URL pathname value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/pathname))
+   */
   getPathname() {
     this.logUnsafeUsage_();
     return this.url_.pathname;
@@ -349,14 +354,16 @@ export class SafeURL<R extends string, S extends boolean = true> {
 
     this.segments_ = { ...this.segments_, ...segments };
 
-    this.url_.pathname = keys(this.segments_).reduce<string>(
-      (pathname, key) =>
-        pathname.replace(
-          RegExp(`/(:${String(key)})(/|#|\\?|$)`, 'u'),
-          `/${segments[key]}$2`,
-        ),
-      this.route_,
-    );
+    this.url_.pathname = keys(this.segments_)
+      .reduce<string>(
+        (pathname, key) =>
+          pathname.replace(
+            RegExp(`/(:${String(key)})(/|#|\\?|$)`, 'u'),
+            `/${segments[key]}$2`,
+          ),
+        this.route_,
+      )
+      .replace(/(?<=\/[^#\\?]*)((#|\?).*$)/u, '');
   }
 
   /**
