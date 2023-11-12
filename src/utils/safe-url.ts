@@ -1,10 +1,20 @@
-import { URLError } from './errors';
-import { ILogger, Logger } from './logger';
+import { type ILogger, Logger } from './logger';
 import { freezeProperty } from './object';
 
 type Strict<S extends boolean, T, D> = S extends true ? T : D;
 
-type Hash<R extends string> = R extends `${infer _}#*` ? string : never;
+type CertainHash<H extends string> = H extends `${infer C}|`
+  ? C
+  : H extends `|${infer C}`
+  ? C
+  : H extends `${infer C}|${infer R}`
+  ? C | CertainHash<R>
+  : H;
+type Hash<R extends string> = R extends `${infer _}#*`
+  ? string
+  : R extends `${infer _}#<${infer C}>`
+  ? CertainHash<C>
+  : never;
 
 type Credentials = {
   username: string;
@@ -20,8 +30,9 @@ type URLOptions<S extends boolean = true> = {
 const NODE_ENV = process.env.NODE_ENV;
 
 const HASH_REGEXPS = {
-  allowedHash: /#\*$/,
-  staticHash: /#([^\*]?|.{2,})$/,
+  anyHash: /#\*$/u,
+  certainHash: /#<(.*)>$/u,
+  staticHash: /#([^\\*]?|.{2,})$/u,
 };
 
 const areCredentialsValid = (username: string, password: string) =>
@@ -53,7 +64,14 @@ export class SafeURL<R extends string, S extends boolean = true> {
       this.logger_.warn(`Strict mode for route "${this.route_}" is disabled`);
     }
 
-    if (!HASH_REGEXPS.allowedHash.test(this.route_)) {
+    if (!HASH_REGEXPS.staticHash.test(this.route_)) {
+      this.url_.hash = '';
+    }
+
+    if (
+      !HASH_REGEXPS.anyHash.test(this.route_) &&
+      !HASH_REGEXPS.certainHash.test(this.route_)
+    ) {
       freezeProperty(this.url_, 'hash');
       this.logger_.info(
         `URL hash value of the route "${this.route_}" is frozen`,
@@ -92,39 +110,63 @@ export class SafeURL<R extends string, S extends boolean = true> {
    * Sets an URL hash value if the route allows it
    *
    * @example
+   * const url = new SafeURL('/foo/bar', { baseUrl: 'https://...' });
+   *
+   * url.setHash('baz'); // TypeError: Route does not allow hash property
+   *
+   * expect(url.getHash()).toBe(''); // true
+   *
+   * @example
    * const url = new SafeURL('/foo/bar#*', { baseUrl: 'https://...' });
    *
-   * url.setHash('baz');
+   * url.setHash('qwe');
+   *
+   * expect(url.getHash()).toBe('#qwe'); // true
+   *
+   * @example
+   * const url = new SafeURL('/foo/bar#baz', { baseUrl: 'https://...' });
+   *
+   * url.setHash('qwe'); // TypeError: Hash value is not mutable
    *
    * expect(url.getHash()).toBe('#baz'); // true
    *
    * @example
-   * const url1 = new SafeURL('/foo/bar#', { baseUrl: 'https://...' });
-   * const url2 = new SafeURL('/foo/bar#static-hash', { baseUrl: 'https://...' });
+   * const url = new SafeURL('/foo/bar#<baz|qux|quux>', { baseUrl: 'https://...' });
    *
-   * url1.setHash('baz'); // Error: Hash value is not mutable
-   * url2.setHash('baz'); // Error: Hash value is not mutable
-   *
-   * expect(url1.getHash()).toBe(''); // true
-   * expect(url2.getHash()).toBe('#static-hash'); // true
-   *
-   * @example
-   * const url = new SafeURL('/foo/bar', { baseUrl: 'https://...' });
-   *
-   * url.setHash('baz'); // Error: Route does not allow hash property
+   * url.setHash('qwe'); // TypeError: Hash value does not match to certain ones
    *
    * expect(url.getHash()).toBe(''); // true
+   *
+   * url.setHash('qux');
+   *
+   * expect(url.getHash()).toBe('#qux'); // true
    *
    * @param hash - URL hash value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/hash))
    */
   setHash(hash: Strict<S, Hash<R>, string>): void {
-    if (HASH_REGEXPS.allowedHash.test(this.route_)) {
+    if (HASH_REGEXPS.anyHash.test(this.route_)) {
       this.url_.hash = hash;
-    } else if (HASH_REGEXPS.staticHash.test(this.route_)) {
-      this.throw_(new URLError('Hash value is not mutable'));
-    } else {
-      this.throw_(new URLError('Route does not allow hash property'));
+      return;
     }
+
+    if (HASH_REGEXPS.certainHash.test(this.route_)) {
+      const certainValues =
+        this.route_.match(HASH_REGEXPS.certainHash)?.[1]?.split('|') ?? [];
+
+      if (!certainValues.includes(hash)) {
+        this.throw_(new TypeError('Hash value does not match to certain ones'));
+        return;
+      }
+
+      this.url_.hash = hash;
+      return;
+    }
+
+    if (HASH_REGEXPS.staticHash.test(this.route_)) {
+      this.throw_(new TypeError('Hash value is not mutable'));
+      return;
+    }
+    this.throw_(new TypeError('Route does not allow hash property'));
   }
 
   /**
@@ -235,7 +277,12 @@ export class SafeURL<R extends string, S extends boolean = true> {
     return this.url_.username;
   }
 
-  private throw_(error: Error) {
+  /**
+   * Throws an error if strict mode is enabled and displays it as a warning if strict mode is disabled
+   *
+   * @param error - An `Error` instance
+   */
+  protected throw_(error: Error) {
     if (this.isStrictModeEnabled_) throw error;
     else this.logger_.warn(error.message);
   }

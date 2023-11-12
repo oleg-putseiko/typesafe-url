@@ -21,7 +21,7 @@
     "baseUrl": ".",
     "incremental": true
   },
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", ".eslintrc.cjs"],
   "exclude": ["node_modules"],
   "moduleResolution": ["node_modules", "node"]
 }
