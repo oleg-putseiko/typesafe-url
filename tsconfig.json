@@ -19,7 +19,8 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "baseUrl": ".",
-    "incremental": true
+    "incremental": true,
+    "downlevelIteration": true
   },
   "include": ["**/*.ts", ".eslintrc.cjs"],
   "exclude": ["node_modules"],

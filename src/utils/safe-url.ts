@@ -1,7 +1,10 @@
 import { type ILogger, Logger } from './logger';
-import { freezeProperty } from './object';
+import { freezeProperty, keys } from './object';
 
 type Strict<S extends boolean, T, D> = S extends true ? T : D;
+
+type RouteTemplateValue = string | number;
+type SafeString<T extends string> = T extends '' ? never : T;
 
 type CertainHash<H extends string> = H extends `${infer C}|`
   ? C
@@ -15,6 +18,20 @@ type Hash<R extends string> = R extends `${infer _}#*`
   : R extends `${infer _}#<${infer C}>`
   ? CertainHash<C>
   : never;
+type SegmentKeys<R extends string> =
+  R extends `${infer _}/:${infer S}/${infer R}`
+    ? SafeString<S> | SegmentKeys<`/${R}`>
+    : R extends `${infer _}/:${infer S}?${infer _}`
+    ? SafeString<S>
+    : R extends `${infer _}/:${infer S}`
+    ? SafeString<S>
+    : never;
+
+type Segments<
+  R extends string,
+  K extends SegmentKeys<R> = SegmentKeys<R>,
+> = K extends never ? never : Record<K, RouteTemplateValue>;
+type AnySegments = Record<string, RouteTemplateValue>;
 
 type Credentials = {
   username: string;
@@ -35,11 +52,16 @@ const HASH_REGEXPS = {
   staticHash: /#([^\\*]?|.{2,})$/u,
 };
 
+const SEGMENT_REGEXPS = {
+  keys: /\/:([^\\?#\\/]+)($|\?|#|\/)/gu,
+};
+
 const areCredentialsValid = (username: string, password: string) =>
   (username !== '' && password !== '') || (username === '' && password === '');
 
 export class SafeURL<R extends string, S extends boolean = true> {
   private readonly url_: URL;
+  private segments_: Partial<Segments<R>> = {};
 
   protected readonly route_: R;
   protected logger_: ILogger;
@@ -271,6 +293,36 @@ export class SafeURL<R extends string, S extends boolean = true> {
   }
 
   /**
+   * Sets an URL segment values if the route allows it
+   *
+   * @param segments - URL segment values ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/pathname))
+   */
+  setSegments(segments: Strict<S, Segments<R>, AnySegments>): void {
+    if (!this.areSegmentsValid_(segments)) {
+      this.throw_(new TypeError('Segment key does not match to certain ones'));
+      return;
+    }
+
+    this.segments_ = { ...this.segments_, ...segments };
+
+    this.url_.pathname = keys(this.segments_).reduce<string>(
+      (pathname, key) =>
+        pathname.replace(
+          RegExp(`/(:${String(key)})(/|#|\\?|$)`, 'u'),
+          `/${segments[key]}$2`,
+        ),
+      this.route_,
+    );
+  }
+
+  /**
+   * @returns URL segment values ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/pathname))
+   */
+  getSegments(): Partial<Segments<R>> {
+    return this.segments_;
+  }
+
+  /**
    * @returns URL username value ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/username))
    */
   getUsername(): string {
@@ -282,8 +334,19 @@ export class SafeURL<R extends string, S extends boolean = true> {
    *
    * @param error - An `Error` instance
    */
-  protected throw_(error: Error) {
+  protected throw_(error: Error): void {
     if (this.isStrictModeEnabled_) throw error;
     else this.logger_.warn(error.message);
+  }
+
+  private areSegmentsValid_(segments: AnySegments): segments is Segments<R> {
+    const segmentKeys = [...this.route_.matchAll(SEGMENT_REGEXPS.keys)].reduce<
+      string[]
+    >((keys, matches) => {
+      if (matches.length > 1) keys.push(matches[1]);
+      return keys;
+    }, []);
+
+    return keys(segments).every((key) => segmentKeys.includes(String(key)));
   }
 }
