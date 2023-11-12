@@ -298,6 +298,20 @@ export class SafeURL<R extends string, S extends boolean = true> {
   /**
    * Sets an URL segment values if the route allows it
    *
+   * @example
+   * const url = new SafeURL('/foo/:bar/baz', { baseUrl: 'https://...' });
+   *
+   * url.setSegments({ bar: 'qwe' });
+   *
+   * expect(url.getPathname()).toBe('/foo/qwe/baz'); // true
+   *
+   * @example
+   * const url = new SafeURL('/foo/:bar/baz', { baseUrl: 'https://...' });
+   *
+   * url.setSegments({ qux: 'qwe' }); // TypeError: Segment key does not match to certain ones
+   *
+   * expect(url.getPathname()).toBe('/foo/:baz/baz'); // true
+   *
    * @param segments - URL segment values ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/pathname))
    */
   setSegments(segments: Strict<S, Segments<R>, AnySegments>): void {
