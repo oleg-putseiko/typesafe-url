@@ -63,6 +63,7 @@ const areCredentialsValid = (username: string, password: string) =>
 export class SafeURL<R extends string, S extends boolean = true> {
   private readonly url_: URL;
   private segments_: Partial<Segments<R>> = {};
+  private segmentKeys_: SegmentKeys<R>[] = [];
 
   protected readonly route_: R;
   protected logger_: Logger;
@@ -79,12 +80,26 @@ export class SafeURL<R extends string, S extends boolean = true> {
       isEnabled: IS_DEVELOPMENT,
     });
 
+    if (!this.isStrictModeEnabled_) {
+      this.logger_.warn(`Strict mode for route "${this.route_}" is disabled`);
+    }
+
     if (!areCredentialsValid(this.url_.username, this.url_.password)) {
       this.throw_(new Error('Invalid credentials'));
     }
 
-    if (!this.isStrictModeEnabled_) {
-      this.logger_.warn(`Strict mode for route "${this.route_}" is disabled`);
+    this.segmentKeys_ = [...this.route_.matchAll(SEGMENT_REGEXPS.keys)].reduce<
+      SegmentKeys<R>[]
+    >((keys, matches) => {
+      if (matches.length > 1) keys.push(matches[1] as SegmentKeys<R>);
+      return keys;
+    }, []);
+
+    if (this.segmentKeys_.length <= 0) {
+      freezeProperty(this.url_, 'pathname');
+      this.logger_.info(
+        `URL pathname value of the route "${this.route_}" is frozen`,
+      );
     }
 
     if (!HASH_REGEXPS.staticHash.test(this.route_)) {
@@ -312,9 +327,21 @@ export class SafeURL<R extends string, S extends boolean = true> {
    *
    * expect(url.getPathname()).toBe('/foo/:baz/baz'); // true
    *
+   * @example
+   * const url = new SafeURL('/foo/bar/baz', { baseUrl: 'https://...' });
+   *
+   * url.setSegments({ qux: 'qwe' }); // TypeError: Route does not allow segment properties
+   *
+   * expect(url.getPathname()).toBe('/foo/baz/baz'); // true
+   *
    * @param segments - URL segment values ([MDN Reference](https://developer.mozilla.org/docs/Web/API/URL/pathname))
    */
   setSegments(segments: Strict<S, Segments<R>, AnySegments>): void {
+    if (this.segmentKeys_.length <= 0) {
+      this.throw_(new TypeError('Route does not allow segment properties'));
+      return;
+    }
+
     if (!this.areSegmentsValid_(segments)) {
       this.throw_(new TypeError('Segment key does not match to certain ones'));
       return;
@@ -370,13 +397,8 @@ export class SafeURL<R extends string, S extends boolean = true> {
   }
 
   private areSegmentsValid_(segments: AnySegments): segments is Segments<R> {
-    const segmentKeys = [...this.route_.matchAll(SEGMENT_REGEXPS.keys)].reduce<
-      string[]
-    >((keys, matches) => {
-      if (matches.length > 1) keys.push(matches[1]);
-      return keys;
-    }, []);
-
-    return keys(segments).every((key) => segmentKeys.includes(String(key)));
+    return keys(segments).every((key) =>
+      (this.segmentKeys_ satisfies string[] as string[]).includes(key),
+    );
   }
 }
