@@ -1,4 +1,4 @@
-import { type ILogger, Logger } from './logger';
+import { type ILogger, Logger, type LogLevel } from './logger';
 import { freezeProperty, keys } from './object';
 
 type Strict<S extends boolean, T, D> = S extends true ? T : D;
@@ -41,6 +41,7 @@ type Credentials = {
 type URLOptions<S extends boolean = true> = {
   baseUrl: string;
   logger: ILogger;
+  logLevel: LogLevel | LogLevel[];
   isStrictModeEnabled: S;
 };
 
@@ -77,6 +78,7 @@ export class SafeURL<R extends string, S extends boolean = true> {
     this.logger_ = new Logger({
       instance: options?.logger,
       scope: 'Safe URL',
+      level: options?.logLevel,
       isEnabled: IS_DEVELOPMENT,
     });
 
