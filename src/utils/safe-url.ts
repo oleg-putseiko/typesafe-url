@@ -339,7 +339,7 @@ export class SafeURL<R extends string, S extends boolean = true> {
    */
   protected throw_(error: Error): void {
     if (this.isStrictModeEnabled_) throw error;
-    else this.logger_.warn(error.message);
+    else this.logger_.traceWarn(error.message);
   }
 
   private logUnsafeUsage_(): void {
