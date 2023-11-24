@@ -20,6 +20,7 @@
     "format": "prettier -w .",
     "format:check": "prettier -c .",
     "test": "jest",
+    "test:watch": "jest --watch",
     "prepare": "husky install"
   },
   "devDependencies": {

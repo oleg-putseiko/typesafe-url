@@ -9,23 +9,23 @@ type SafeString<T extends string> = T extends '' ? never : T;
 type CertainHash<H extends string> = H extends `${infer C}|`
   ? C
   : H extends `|${infer C}`
-  ? C
-  : H extends `${infer C}|${infer R}`
-  ? C | CertainHash<R>
-  : H;
+    ? C
+    : H extends `${infer C}|${infer R}`
+      ? C | CertainHash<R>
+      : H;
 type Hash<R extends string> = R extends `${infer _}#*`
   ? string
   : R extends `${infer _}#<${infer C}>`
-  ? CertainHash<C>
-  : never;
+    ? CertainHash<C>
+    : never;
 type SegmentKeys<R extends string> =
   R extends `${infer _}/:${infer S}/${infer R}`
     ? SafeString<S> | SegmentKeys<`/${R}`>
     : R extends `${infer _}/:${infer S}?${infer _}`
-    ? SafeString<S>
-    : R extends `${infer _}/:${infer S}`
-    ? SafeString<S>
-    : never;
+      ? SafeString<S>
+      : R extends `${infer _}/:${infer S}`
+        ? SafeString<S>
+        : never;
 
 type Segments<
   R extends string,
@@ -55,7 +55,7 @@ const SEGMENT_REGEXPS = {
 const HASH_REGEXPS = {
   anyHash: /#\*$/u,
   certainHash: /#<(.*)>$/u,
-  staticHash: /#([^\\*]?|.{2,})$/u,
+  staticHash: /#[^\\*].*$/u,
 };
 
 const areCredentialsValid = (username: string, password: string) =>
@@ -96,8 +96,6 @@ export class SafeURL<R extends string, S extends boolean = true> {
       if (matches.length > 1) keys.push(matches[1] as SegmentKeys<R>);
       return keys;
     }, []);
-
-    // freezeProperty(this.url_, 'href');
 
     if (this.segmentKeys_.length <= 0) {
       freezeProperty(this.url_, 'pathname');
